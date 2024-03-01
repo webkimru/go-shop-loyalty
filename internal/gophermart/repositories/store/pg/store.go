@@ -101,3 +101,45 @@ func (s *Store) CreateOrder(ctx context.Context, order models.Order) (int64, int
 
 	return number, userID, nil
 }
+
+func (s *Store) GetOrders(ctx context.Context) ([]models.Order, error) {
+	stmt, err := s.Conn.PrepareContext(ctx, `
+		SELECT number, accrual, status, created_at
+			FROM gophermart.orders
+				ORDER BY created_at DESC
+	`)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := stmt.QueryContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var orders []models.Order
+	for rows.Next() {
+		var number int64
+		var accrual sql.NullInt64
+		var status, createdAt string
+		err = rows.Scan(&number, &accrual, &status, &createdAt)
+		if err != nil {
+			return nil, err
+		}
+		orders = append(orders, models.Order{
+			Number:    number,
+			Accrual:   accrual.Int64,
+			Status:    models.OrderState(status),
+			CreatedAt: createdAt,
+		})
+	}
+
+	// необходимо проверить ошибки уровня курсора
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return orders, nil
+}

@@ -19,9 +19,9 @@ const (
 )
 
 type Order struct {
-	Number    int64      `json:"id"`
-	UserID    int64      `json:"user_id"`
-	Accrual   int64      `json:"accrual"`
+	Number    int64      `json:"number"`
+	UserID    int64      `json:"-"`
+	Accrual   int64      `json:"accrual,omitempty"`
 	Status    OrderState `json:"status"`
 	CreatedAt string     `json:"uploaded_at"`
 }

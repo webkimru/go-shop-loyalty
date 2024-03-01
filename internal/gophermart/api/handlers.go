@@ -84,7 +84,7 @@ func (m *Repository) Register(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 	// отвечаем клиенту
-	if err := m.WriteResponseJSON(w, *resp); err != nil {
+	if err := m.WriteResponseJSON(w, *resp, http.StatusOK); err != nil {
 		logger.Log.Errorln("failed WriteResponseJSON()=", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
@@ -178,7 +178,27 @@ func (m *Repository) CreateOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Repository) GetOrders(w http.ResponseWriter, r *http.Request) {
+	//- `200` — успешная обработка запроса.
+	//- `204` — нет данных для ответа.
+	//- `401` — пользователь не авторизован.
+	//- `500` — внутренняя ошибка сервера.
+	orders, err := m.Store.GetOrders(r.Context())
+	if err != nil {
+		logger.Log.Errorln("failed GetOrders()= ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
+	// 204` — нет данных для ответа.
+	if len(orders) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	if err := m.WriteResponseJSON(w, orders, http.StatusOK); err != nil {
+		logger.Log.Errorln("failed WriteResponseJSON()=", err)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 }
 
 func (m *Repository) GetBalance(w http.ResponseWriter, r *http.Request) {
@@ -193,10 +213,10 @@ func (m *Repository) GetWithdraw(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (m *Repository) WriteResponseJSON(w http.ResponseWriter, user models.User) error {
+func (m *Repository) WriteResponseJSON(w http.ResponseWriter, data interface{}, status int) error {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(user); err != nil {
+	w.WriteHeader(status)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
 		return err
 	}
 
