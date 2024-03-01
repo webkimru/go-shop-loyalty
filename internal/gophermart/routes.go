@@ -12,19 +12,21 @@ func Routes() http.Handler {
 
 	r.Use(middleware.WithLogging)
 	r.Use(middleware.Gzip)
-	r.Use(middleware.CheckApplicationJSON)
 
 	r.Group(func(r chi.Router) {
+		r.Use(middleware.CheckApplicationJSON)
+
 		r.Post("/api/user/register", api.Repo.Register)
 		r.Post("/api/user/login", api.Repo.Login)
 
-		r.Post("/api/user/orders", api.Repo.CreateOrder)
 		r.Get("/api/user/orders", api.Repo.GetOrders)
 
 		r.Get("/api/user/balance", api.Repo.GetBalance)
 		r.Post("/api/user/balance/withdraw", api.Repo.PayWithdraw)
 		r.Get("/api/user/withdrawals", api.Repo.GetWithdraw)
 	})
+
+	r.Post("/api/user/orders", api.Repo.CreateOrder)
 
 	return r
 }

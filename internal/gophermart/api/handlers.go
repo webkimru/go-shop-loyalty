@@ -118,7 +118,18 @@ func (m *Repository) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Repository) CreateOrder(w http.ResponseWriter, r *http.Request) {
+	var order models.Order
+	if err := json.NewDecoder(r.Body).Decode(&order); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
+	if !order.IsValid() {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (m *Repository) GetOrders(w http.ResponseWriter, r *http.Request) {
