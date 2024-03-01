@@ -84,7 +84,37 @@ func (m *Repository) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Repository) Login(w http.ResponseWriter, r *http.Request) {
+	var user models.User
 
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if user.Login == "" || user.Password == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	hash := sha256.Sum256([]byte(user.Password))
+	user.Password = hex.EncodeToString(hash[:])
+
+	// check auth
+	id, err := m.Store.GetIdUserByAuth(r.Context(), user)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	// set token
+	token, err := BuildJWTString(id)
+	if err != nil {
+		logger.Log.Errorln("failed BuildJWTString()= ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (m *Repository) CreateOrder(w http.ResponseWriter, r *http.Request) {

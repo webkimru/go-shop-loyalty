@@ -9,4 +9,5 @@ import (
 type Repositories interface {
 	Initialize(ctx context.Context, app config.AppConfig) error
 	CreateUser(ctx context.Context, user models.User) (*models.User, error)
+	GetIdUserByAuth(ctx context.Context, user models.User) (int64, error)
 }

@@ -55,3 +55,22 @@ func (s *Store) CreateUser(ctx context.Context, user models.User) (*models.User,
 
 	return &user, nil
 }
+
+func (s *Store) GetIdUserByAuth(ctx context.Context, user models.User) (int64, error) {
+	stmt, err := s.Conn.PrepareContext(ctx, `
+		SELECT id FROM gophermart.users
+			WHERE login = $1 AND password = $2
+	`)
+	if err != nil {
+		return 0, err
+	}
+
+	var res int64
+	err = stmt.QueryRowContext(ctx, user.Login, user.Password).Scan(&res)
+	if err != nil {
+		return 0, err
+	}
+	defer stmt.Close()
+
+	return res, nil
+}
