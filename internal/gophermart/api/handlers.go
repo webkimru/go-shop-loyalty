@@ -11,6 +11,7 @@ import (
 	"github.com/webkimru/go-shop-loyalty/internal/gophermart/models"
 	"github.com/webkimru/go-shop-loyalty/internal/gophermart/repositories/store"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -19,6 +20,8 @@ var Repo *Repository
 var app *config.AppConfig
 
 var ErrDuplicate = errors.New("duplicate key value")
+
+const bearerSchema = "Bearer "
 
 // Repository описываем структуру репозитория для хендлеров
 type Repository struct {
@@ -39,6 +42,10 @@ func NewHandlers(r *Repository, a *config.AppConfig) {
 }
 
 func (m *Repository) Register(w http.ResponseWriter, r *http.Request) {
+	//- `200` — пользователь успешно зарегистрирован и аутентифицирован;
+	//- `400` — неверный формат запроса;
+	//- `409` — логин уже занят;
+	//- `500` — внутренняя ошибка сервера.
 	var user models.User
 
 	// разбираем POST данные на входе
@@ -84,6 +91,10 @@ func (m *Repository) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Repository) Login(w http.ResponseWriter, r *http.Request) {
+	//- `200` — пользователь успешно аутентифицирован;
+	//- `400` — неверный формат запроса;
+	//- `401` — неверная пара логин/пароль;
+	//- `500` — внутренняя ошибка сервера.
 	var user models.User
 
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
@@ -118,18 +129,52 @@ func (m *Repository) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Repository) CreateOrder(w http.ResponseWriter, r *http.Request) {
-	var order models.Order
-	if err := json.NewDecoder(r.Body).Decode(&order); err != nil {
+	//- `200` — номер заказа уже был загружен этим пользователем;
+	//- `202` — новый номер заказа принят в обработку;
+	//- `400` — неверный формат запроса;
+	//- `401` — пользователь не аутентифицирован;
+	//- `409` — номер заказа уже был загружен другим пользователем;
+	//- `422` — неверный формат номера заказа;
+	//- `500` — внутренняя ошибка сервера.
+	var orderNumber int64
+	if err := json.NewDecoder(r.Body).Decode(&orderNumber); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
+	var order models.Order
 	if !order.IsValid() {
+		// `422` — неверный формат номера заказа;
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
+	order.Number = orderNumber
+	order.UserID = m.GetUserID(r)
+	order.Status = models.OrderStateNew
+	order.CreatedAt = time.Now().Format(time.RFC3339)
+	orderNumberDB, userDB, err := m.Store.CreateOrder(r.Context(), order)
+	if err != nil && !errors.Is(err, ErrDuplicate) {
+		logger.Log.Errorln("failed CreateOrder()= ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	// `409` — номер заказа уже был загружен другим пользователем;
+	if errors.Is(err, ErrDuplicate) && userDB != order.UserID {
+		w.WriteHeader(http.StatusConflict)
+		return
+	}
+	// `200` — номер заказа уже был загружен этим пользователем;
+	if errors.Is(err, ErrDuplicate) && userDB == order.UserID {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 
-	w.WriteHeader(http.StatusOK)
+	// `202` — новый номер заказа принят в обработку;
+	w.WriteHeader(http.StatusAccepted)
+	_, err = w.Write([]byte(strconv.Itoa(int(orderNumberDB))))
+	if err != nil {
+		logger.Log.Errorln("failed Write()= ", err)
+	}
 }
 
 func (m *Repository) GetOrders(w http.ResponseWriter, r *http.Request) {
@@ -156,4 +201,12 @@ func (m *Repository) WriteResponseJSON(w http.ResponseWriter, user models.User) 
 	}
 
 	return nil
+}
+
+func (m *Repository) GetUserID(r *http.Request) int64 {
+	authorization := r.Header.Get("Authorization")
+	token := authorization[len(bearerSchema):]
+	userID := GetUserID(token)
+
+	return userID
 }

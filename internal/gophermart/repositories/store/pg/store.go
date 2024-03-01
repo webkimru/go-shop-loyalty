@@ -74,3 +74,30 @@ func (s *Store) GetIDUserByAuth(ctx context.Context, user models.User) (int64, e
 
 	return res, nil
 }
+
+func (s *Store) CreateOrder(ctx context.Context, order models.Order) (int64, int64, error) {
+	stmt, err := s.Conn.PrepareContext(ctx, `
+		INSERT INTO gophermart.orders (number, user_id, status, created_at) VALUES($1, $2, $3, $4)
+			ON CONFLICT (number) DO
+			    UPDATE SET number = $1 RETURNING number, user_id, created_at
+	`)
+
+	if err != nil {
+		return 0, 0, err
+	}
+
+	var number, userID int64
+	var createdAt string
+	err = stmt.QueryRowContext(ctx, order.Number, order.UserID, order.Status, order.CreatedAt).Scan(&number, &userID, &createdAt)
+	if err != nil {
+		return 0, 0, err
+	}
+	defer stmt.Close()
+
+	// check duplicate
+	if number == order.Number && createdAt != order.CreatedAt {
+		return number, userID, api.ErrDuplicate
+	}
+
+	return number, userID, nil
+}

@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/webkimru/go-shop-loyalty/internal/gophermart/logger"
 	"time"
 )
 
@@ -47,11 +48,12 @@ func GetUserID(tokenString string) int64 {
 		return []byte(app.SecretKey), nil
 	})
 	if err != nil {
+		logger.Log.Infoln(err)
 		return -1
 	}
 
 	if !token.Valid {
-		fmt.Println("Token is not valid")
+		logger.Log.Infoln("Token is not valid")
 		return -1
 	}
 

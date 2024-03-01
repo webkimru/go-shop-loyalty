@@ -38,7 +38,7 @@ func Bootstrap(ctx context.Context, conn *sql.DB) error {
 		CREATE TABLE IF NOT EXISTS orders (
 		    number BIGINT NOT NULL,
 			user_id BIGINT NOT NULL,
-			accrual BIGINT NOT NULL,
+			accrual BIGINT,
 			status VARCHAR(25) NOT NULL,
 			created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 			updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
