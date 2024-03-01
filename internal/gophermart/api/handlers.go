@@ -99,7 +99,7 @@ func (m *Repository) Login(w http.ResponseWriter, r *http.Request) {
 	user.Password = hex.EncodeToString(hash[:])
 
 	// check auth
-	id, err := m.Store.GetIdUserByAuth(r.Context(), user)
+	id, err := m.Store.GetIDUserByAuth(r.Context(), user)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
