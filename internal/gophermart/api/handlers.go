@@ -77,8 +77,8 @@ func (m *Repository) Register(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 	// отвечаем клиенту
-	if err := m.WriteResponseJson(w, *resp); err != nil {
-		logger.Log.Errorln("failed WriteResponseJson()=", err)
+	if err := m.WriteResponseJSON(w, *resp); err != nil {
+		logger.Log.Errorln("failed WriteResponseJSON()=", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
@@ -107,7 +107,7 @@ func (m *Repository) GetWithdraw(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (m *Repository) WriteResponseJson(w http.ResponseWriter, user models.User) error {
+func (m *Repository) WriteResponseJSON(w http.ResponseWriter, user models.User) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(user); err != nil {
