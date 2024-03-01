@@ -12,7 +12,7 @@ func Routes() http.Handler {
 
 	r.Use(middleware.WithLogging)
 	r.Use(middleware.Gzip)
-	r.Use(middleware.CheckApplicationJson)
+	r.Use(middleware.CheckApplicationJSON)
 
 	r.Group(func(r chi.Router) {
 		r.Post("/api/user/register", api.Repo.Register)
