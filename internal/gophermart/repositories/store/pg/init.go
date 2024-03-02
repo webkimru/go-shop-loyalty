@@ -36,7 +36,7 @@ func Bootstrap(ctx context.Context, conn *sql.DB) error {
 	// orders:
 	tx.ExecContext(ctx, `
 		CREATE TABLE IF NOT EXISTS orders (
-		    number BIGINT NOT NULL,
+		    number VARCHAR(50) NOT NULL,
 			user_id BIGINT NOT NULL,
 			accrual BIGINT,
 			status VARCHAR(25) NOT NULL,

@@ -26,7 +26,7 @@ func (m *Repository) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var order models.Order
-	order.Number = orderNumber
+	order.Number = strconv.Itoa(int(orderNumber))
 	if !order.IsValid() {
 		// `422` — неверный формат номера заказа;
 		w.WriteHeader(http.StatusUnprocessableEntity)
@@ -54,7 +54,7 @@ func (m *Repository) CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	// `202` — новый номер заказа принят в обработку;
 	w.WriteHeader(http.StatusAccepted)
-	_, err = w.Write([]byte(strconv.Itoa(int(orderNumberDB))))
+	_, err = w.Write([]byte(orderNumberDB))
 	if err != nil {
 		logger.Log.Errorln("failed Write()= ", err)
 	}

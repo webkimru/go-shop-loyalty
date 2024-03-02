@@ -11,6 +11,6 @@ type Repositories interface {
 	CreateUser(ctx context.Context, user models.User) (*models.User, error)
 	GetIDUserByAuth(ctx context.Context, user models.User) (int64, error)
 
-	CreateOrder(ctx context.Context, order models.Order) (number int64, userID int64, err error)
+	CreateOrder(ctx context.Context, order models.Order) (number string, userID int64, err error)
 	GetOrders(ctx context.Context) ([]models.Order, error)
 }

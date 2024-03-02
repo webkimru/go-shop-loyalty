@@ -75,7 +75,7 @@ func (s *Store) GetIDUserByAuth(ctx context.Context, user models.User) (int64, e
 	return res, nil
 }
 
-func (s *Store) CreateOrder(ctx context.Context, order models.Order) (int64, int64, error) {
+func (s *Store) CreateOrder(ctx context.Context, order models.Order) (string, int64, error) {
 	stmt, err := s.Conn.PrepareContext(ctx, `
 		INSERT INTO gophermart.orders (number, user_id, status, created_at) VALUES($1, $2, $3, $4)
 			ON CONFLICT (number) DO
@@ -83,14 +83,14 @@ func (s *Store) CreateOrder(ctx context.Context, order models.Order) (int64, int
 	`)
 
 	if err != nil {
-		return 0, 0, err
+		return "", 0, err
 	}
 
-	var number, userID int64
-	var createdAt string
+	var userID int64
+	var number, createdAt string
 	err = stmt.QueryRowContext(ctx, order.Number, order.UserID, order.Status, order.CreatedAt).Scan(&number, &userID, &createdAt)
 	if err != nil {
-		return 0, 0, err
+		return "", 0, err
 	}
 	defer stmt.Close()
 
@@ -121,9 +121,8 @@ func (s *Store) GetOrders(ctx context.Context) ([]models.Order, error) {
 
 	var orders []models.Order
 	for rows.Next() {
-		var number int64
 		var accrual sql.NullInt64
-		var status, createdAt string
+		var number, status, createdAt string
 		err = rows.Scan(&number, &accrual, &status, &createdAt)
 		if err != nil {
 			return nil, err
