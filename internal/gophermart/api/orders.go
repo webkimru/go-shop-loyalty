@@ -78,6 +78,8 @@ func (m *Repository) GetOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	logger.Log.Infoln("orders", orders)
+
 	if err := m.WriteResponseJSON(w, orders, http.StatusOK); err != nil {
 		logger.Log.Errorln("failed WriteResponseJSON()=", err)
 		w.WriteHeader(http.StatusInternalServerError)
