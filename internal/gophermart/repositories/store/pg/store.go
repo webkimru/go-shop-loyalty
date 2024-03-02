@@ -129,7 +129,7 @@ func (s *Store) GetOrders(ctx context.Context) ([]models.Order, error) {
 		}
 		orders = append(orders, models.Order{
 			Number:    number,
-			Accrual:   accrual.Int64,
+			Accrual:   float32(accrual.Int64) / 100,
 			Status:    models.OrderState(status),
 			CreatedAt: createdAt,
 		})

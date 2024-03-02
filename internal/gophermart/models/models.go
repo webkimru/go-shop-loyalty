@@ -19,7 +19,7 @@ const (
 type Order struct {
 	Number    string     `json:"number"`
 	UserID    int64      `json:"-"`
-	Accrual   int64      `json:"accrual,omitempty"`
+	Accrual   float32    `json:"accrual,omitempty"`
 	Status    OrderState `json:"status"`
 	CreatedAt string     `json:"uploaded_at"`
 }
