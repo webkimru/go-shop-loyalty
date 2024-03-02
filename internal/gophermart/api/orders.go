@@ -26,12 +26,12 @@ func (m *Repository) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var order models.Order
+	order.Number = orderNumber
 	if !order.IsValid() {
 		// `422` — неверный формат номера заказа;
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
-	order.Number = orderNumber
 	order.UserID = m.GetUserID(r)
 	order.Status = models.OrderStateNew
 	order.CreatedAt = time.Now().Format(time.RFC3339)
