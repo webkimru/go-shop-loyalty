@@ -20,6 +20,7 @@ func (m *Repository) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	//- `500` — внутренняя ошибка сервера.
 	var orderNumber int64
 	if err := json.NewDecoder(r.Body).Decode(&orderNumber); err != nil {
+		logger.Log.Errorln("orderNumber", orderNumber, err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
