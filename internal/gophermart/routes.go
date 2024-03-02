@@ -24,10 +24,10 @@ func Routes() http.Handler {
 		r.Use(middleware.CheckAuth)
 
 		r.Post("/api/user/orders", api.Repo.CreateOrder)
-		r.With(middleware.CheckApplicationJSON).Get("/api/user/orders", api.Repo.GetOrders)
-		r.With(middleware.CheckApplicationJSON).Get("/api/user/balance", api.Repo.GetBalance)
+		r.Get("/api/user/orders", api.Repo.GetOrders)
+		r.Get("/api/user/balance", api.Repo.GetBalance)
 		r.With(middleware.CheckApplicationJSON).Post("/api/user/balance/withdraw", api.Repo.PayWithdraw)
-		r.With(middleware.CheckApplicationJSON).Get("/api/user/withdrawals", api.Repo.GetWithdraw)
+		r.Get("/api/user/withdrawals", api.Repo.GetWithdraw)
 	})
 
 	return r
