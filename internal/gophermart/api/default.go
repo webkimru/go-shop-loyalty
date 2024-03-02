@@ -37,7 +37,12 @@ func NewHandlers(r *Repository, a *config.AppConfig) {
 func (m *Repository) WriteResponseJSON(w http.ResponseWriter, data interface{}, status int) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	if err := json.NewEncoder(w).Encode(data); err != nil {
+	out, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(out)
+	if err != nil {
 		return err
 	}
 
