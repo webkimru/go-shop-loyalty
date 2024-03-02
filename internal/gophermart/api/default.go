@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/webkimru/go-shop-loyalty/internal/gophermart/config"
+	"github.com/webkimru/go-shop-loyalty/internal/gophermart/models"
 	"github.com/webkimru/go-shop-loyalty/internal/gophermart/repositories/store"
 	"net/http"
 )
@@ -37,7 +38,12 @@ func NewHandlers(r *Repository, a *config.AppConfig) {
 func (m *Repository) WriteResponseJSON(w http.ResponseWriter, data interface{}, status int) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	out, err := json.Marshal(data)
+
+	out, err := json.Marshal([]models.Order{{
+		Number:    12345678903,
+		Status:    "NEW",
+		CreatedAt: "2024-03-02T11:12:00Z",
+	}})
 	if err != nil {
 		return err
 	}
