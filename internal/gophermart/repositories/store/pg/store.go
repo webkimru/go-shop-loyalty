@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"github.com/webkimru/go-shop-loyalty/internal/gophermart/api"
 	"github.com/webkimru/go-shop-loyalty/internal/gophermart/config"
+	"github.com/webkimru/go-shop-loyalty/internal/gophermart/logger"
 	"github.com/webkimru/go-shop-loyalty/internal/gophermart/models"
 )
 
@@ -86,33 +87,41 @@ func (s *Store) CreateOrder(ctx context.Context, order models.Order) (string, in
 		return "", 0, err
 	}
 
-	var userID int64
-	var number, createdAt string
-	err = stmt.QueryRowContext(ctx, order.Number, order.UserID, order.Status, order.CreatedAt).Scan(&number, &userID, &createdAt)
+	var userDB int64
+	var numberDB, createdAtDB string
+	err = stmt.QueryRowContext(ctx, order.Number, order.UserID, order.Status, order.CreatedAt).Scan(&numberDB, &userDB, &createdAtDB)
 	if err != nil {
 		return "", 0, err
 	}
 	defer stmt.Close()
 
+	logger.Log.Infoln(
+		"Added order numberFromDB", numberDB, "|",
+		"userAuth", order.UserID, "|",
+		"userDB", userDB, "|",
+		"createdAtDB", createdAtDB,
+	)
+
 	// check duplicate
-	if number == order.Number && createdAt != order.CreatedAt {
-		return number, userID, api.ErrDuplicate
+	if numberDB == order.Number && createdAtDB != order.CreatedAt {
+		return numberDB, userDB, api.ErrDuplicate
 	}
 
-	return number, userID, nil
+	return numberDB, userDB, nil
 }
 
-func (s *Store) GetOrders(ctx context.Context) ([]models.Order, error) {
+func (s *Store) GetOrders(ctx context.Context, userID int64) ([]models.Order, error) {
 	stmt, err := s.Conn.PrepareContext(ctx, `
 		SELECT number, accrual, status, created_at
 			FROM gophermart.orders
+				WHERE user_id = $1
 				ORDER BY created_at DESC
 	`)
 	if err != nil {
 		return nil, err
 	}
 
-	rows, err := stmt.QueryContext(ctx)
+	rows, err := stmt.QueryContext(ctx, userID)
 	if err != nil {
 		return nil, err
 	}

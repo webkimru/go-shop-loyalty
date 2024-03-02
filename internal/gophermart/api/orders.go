@@ -65,20 +65,21 @@ func (m *Repository) GetOrders(w http.ResponseWriter, r *http.Request) {
 	//- `204` — нет данных для ответа.
 	//- `401` — пользователь не авторизован.
 	//- `500` — внутренняя ошибка сервера.
-	orders, err := m.Store.GetOrders(r.Context())
+	authUserID := m.GetUserID(r)
+	orders, err := m.Store.GetOrders(r.Context(), authUserID)
 	if err != nil {
 		logger.Log.Errorln("failed GetOrders()= ", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
+	logger.Log.Infoln("Requested by authUserID", authUserID, "|", "orders", orders)
+
 	// 204` — нет данных для ответа.
 	if len(orders) == 0 {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-
-	logger.Log.Infoln("orders", orders)
 
 	if err := m.WriteResponseJSON(w, orders, http.StatusOK); err != nil {
 		logger.Log.Errorln("failed WriteResponseJSON()=", err)
