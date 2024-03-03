@@ -41,14 +41,17 @@ func (m *Repository) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	// `409` — номер заказа уже был загружен другим пользователем;
-	if errors.Is(err, ErrDuplicate) && userDB != order.UserID {
-		w.WriteHeader(http.StatusConflict)
+
+	// `200` — номер заказа уже был загружен этим пользователем;
+	if errors.Is(err, ErrDuplicate) {
+		w.WriteHeader(http.StatusOK)
 		return
 	}
-	// `200` — номер заказа уже был загружен этим пользователем;
-	if errors.Is(err, ErrDuplicate) && userDB == order.UserID {
-		w.WriteHeader(http.StatusOK)
+
+	// `409` — номер заказа уже был загружен другим пользователем;
+	// строго после проверки errors.Is(err, ErrDuplicate), чтобы не проверять на userDB == 0
+	if userDB != order.UserID {
+		w.WriteHeader(http.StatusConflict)
 		return
 	}
 

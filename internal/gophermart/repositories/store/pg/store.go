@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"github.com/webkimru/go-shop-loyalty/internal/gophermart/api"
 	"github.com/webkimru/go-shop-loyalty/internal/gophermart/config"
-	"github.com/webkimru/go-shop-loyalty/internal/gophermart/logger"
 	"github.com/webkimru/go-shop-loyalty/internal/gophermart/models"
 )
 
@@ -29,32 +28,28 @@ func (s *Store) Initialize(ctx context.Context, app config.AppConfig) error {
 func (s *Store) CreateUser(ctx context.Context, user models.User) (*models.User, error) {
 	stmt, err := s.Conn.PrepareContext(ctx, `
 		INSERT INTO gophermart.users (login, password, created_at) VALUES($1, $2, $3)
-			ON CONFLICT (login) DO
-			    UPDATE SET login = $1 RETURNING id, login, password, created_at
+			ON CONFLICT (login) DO NOTHING
+				RETURNING id, login, password, created_at
 	`)
-
-	if err != nil {
-		return nil, err
-	}
-
-	var id int64
-	var login, password, createdAt string
-	err = stmt.QueryRowContext(ctx, user.Login, user.Password, user.CreatedAt).Scan(&id, &login, &password, &createdAt)
 	if err != nil {
 		return nil, err
 	}
 	defer stmt.Close()
 
-	// check duplicate login
-	if login == user.Login && createdAt != user.CreatedAt {
+	var id int64
+	var login, password, createdAt string
+	err = stmt.QueryRowContext(ctx, user.Login, user.Password, user.CreatedAt).Scan(&id, &login, &password, &createdAt)
+	switch {
+	case err == sql.ErrNoRows:
 		return nil, api.ErrDuplicate
+	case err != nil:
+		return nil, err
+	default:
+		user.ID = id
+		user.Password = password
+		user.CreatedAt = createdAt
+		return &user, nil
 	}
-
-	user.ID = id
-	user.Password = password
-	user.CreatedAt = createdAt
-
-	return &user, nil
 }
 
 func (s *Store) GetIDUserByAuth(ctx context.Context, user models.User) (int64, error) {
@@ -78,36 +73,33 @@ func (s *Store) GetIDUserByAuth(ctx context.Context, user models.User) (int64, e
 
 func (s *Store) CreateOrder(ctx context.Context, order models.Order) (string, int64, error) {
 	stmt, err := s.Conn.PrepareContext(ctx, `
-		INSERT INTO gophermart.orders (number, user_id, status, created_at) VALUES($1, $2, $3, $4)
-			ON CONFLICT (number) DO
-			    UPDATE SET number = $1 RETURNING number, user_id, created_at
+		WITH cte AS (
+			INSERT INTO gophermart.orders (number, user_id, status, created_at) VALUES($1, $2, $3, $4)
+				ON CONFLICT (number)
+					DO NOTHING RETURNING number, user_id, created_at
+		)
+		SELECT * FROM cte
+		UNION
+			SELECT number, user_id, created_at
+				FROM gophermart.orders
+					WHERE number = $1 and user_id != $2
 	`)
-
-	if err != nil {
-		return "", 0, err
-	}
-
-	var userDB int64
-	var numberDB, createdAtDB string
-	err = stmt.QueryRowContext(ctx, order.Number, order.UserID, order.Status, order.CreatedAt).Scan(&numberDB, &userDB, &createdAtDB)
 	if err != nil {
 		return "", 0, err
 	}
 	defer stmt.Close()
 
-	logger.Log.Infoln(
-		"Added order numberFromDB", numberDB, "|",
-		"userAuth", order.UserID, "|",
-		"userDB", userDB, "|",
-		"createdAtDB", createdAtDB,
-	)
-
-	// check duplicate
-	if numberDB == order.Number && createdAtDB != order.CreatedAt {
-		return numberDB, userDB, api.ErrDuplicate
+	var userDB int64
+	var numberDB, createdAtDB string
+	err = stmt.QueryRowContext(ctx, order.Number, order.UserID, order.Status, order.CreatedAt).Scan(&numberDB, &userDB, &createdAtDB)
+	switch {
+	case err == sql.ErrNoRows: // owner duplicate
+		return "", 0, api.ErrDuplicate
+	case err != nil:
+		return "", 0, err
+	default: // first and duplicate another
+		return numberDB, userDB, nil
 	}
-
-	return numberDB, userDB, nil
 }
 
 func (s *Store) GetOrders(ctx context.Context, userID int64) ([]models.Order, error) {
@@ -125,7 +117,6 @@ func (s *Store) GetOrders(ctx context.Context, userID int64) ([]models.Order, er
 	if err != nil {
 		return nil, err
 	}
-
 	defer rows.Close()
 
 	var orders []models.Order
