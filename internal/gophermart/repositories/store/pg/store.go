@@ -142,3 +142,30 @@ func (s *Store) GetOrders(ctx context.Context, userID int64) ([]models.Order, er
 
 	return orders, nil
 }
+
+func (s *Store) GetBalance(ctx context.Context, userID int64) (*models.Balance, error) {
+	stmt, err := s.Conn.PrepareContext(ctx, `
+		SELECT user_id, current, withdrawn FROM gophermart.balance
+			WHERE user_id = $1
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	var userDB, current, withdrawn int64
+	err = stmt.QueryRowContext(ctx, userID).Scan(&userDB, &current, &withdrawn)
+	balance := models.Balance{
+		UserID:    userDB,
+		Current:   float32(current) / 100,
+		Withdrawn: float32(current) / 100,
+	}
+	switch {
+	case err == sql.ErrNoRows:
+		return &balance, nil
+	case err != nil:
+		return nil, err
+	default:
+		return &balance, nil
+	}
+}

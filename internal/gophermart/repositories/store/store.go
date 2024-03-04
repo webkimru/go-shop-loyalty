@@ -13,4 +13,6 @@ type Repositories interface {
 
 	CreateOrder(ctx context.Context, order models.Order) (number string, userID int64, err error)
 	GetOrders(ctx context.Context, userID int64) ([]models.Order, error)
+
+	GetBalance(ctx context.Context, userID int64) (*models.Balance, error)
 }

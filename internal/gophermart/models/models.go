@@ -43,3 +43,10 @@ func (o Order) IsValid() bool {
 
 	return sum%10 == 0
 }
+
+type Balance struct {
+	UserID    int64   `json:"-"`
+	Current   float32 `json:"current"`
+	Withdrawn float32 `json:"withdrawn"`
+	CreatedAt string  `json:"-"`
+}
