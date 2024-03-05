@@ -76,7 +76,7 @@ func CheckAccrual(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func GetAccrual(ctx context.Context, order string) (*models.AccrualResponse, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("http://%s/api/orders/%s", app.AccrualSystemAddress, order), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("/%s/api/orders/%s", app.AccrualSystemAddress, order), nil)
 	if err != nil {
 		return nil, err
 	}
