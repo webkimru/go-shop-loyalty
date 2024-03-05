@@ -55,7 +55,7 @@ func Bootstrap(ctx context.Context, conn *sql.DB) error {
 			updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 		)
 	`)
-	tx.ExecContext(ctx, `CREATE UNIQUE INDEX IF NOT EXISTS order_idx ON orders (user_id)`)
+	tx.ExecContext(ctx, `CREATE UNIQUE INDEX IF NOT EXISTS balance_idx ON balance (user_id)`)
 
 	// триггер для поля updated_at
 	tx.ExecContext(ctx, `

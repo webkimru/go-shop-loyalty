@@ -19,7 +19,7 @@ const (
 type Order struct {
 	Number    string     `json:"number"`
 	UserID    int64      `json:"-"`
-	Accrual   float32    `json:"accrual,omitempty"`
+	Accrual   Money      `json:"accrual,omitempty"`
 	Status    OrderState `json:"status"`
 	CreatedAt string     `json:"uploaded_at"`
 }
@@ -45,8 +45,38 @@ func (o Order) IsValid() bool {
 }
 
 type Balance struct {
-	UserID    int64   `json:"-"`
-	Current   float32 `json:"current"`
-	Withdrawn float32 `json:"withdrawn"`
-	CreatedAt string  `json:"-"`
+	UserID    int64  `json:"-"`
+	Current   Money  `json:"current"`
+	Withdrawn Money  `json:"withdrawn"`
+	CreatedAt string `json:"-"`
+}
+
+type Money float32
+
+func (m Money) Set() int64 {
+	return int64(m * 100)
+}
+
+func (m Money) Get() float32 {
+	return float32(m) / 100
+}
+
+type AccrualState string
+
+const (
+	AccrualStateRegistered AccrualState = "REGISTERED" // заказ загружен в систему, но не попал в обработку
+	AccrualStateProcessing AccrualState = "PROCESSING" // вознаграждение за заказ рассчитывается
+	AccrualStateInvalid    AccrualState = "INVALID"    // система расчёта вознаграждений отказала в расчёте
+	AccrualStateProcessed  AccrualState = "PROCESSED"  // данные по заказу проверены и информация о расчёте успешно получена
+)
+
+type AccrualRequest struct {
+	Number string
+	UserID int64
+}
+
+type AccrualResponse struct {
+	Number  string       `json:"order"`
+	Status  AccrualState `json:"status"`
+	Accrual Money        `json:"accrual"`
 }

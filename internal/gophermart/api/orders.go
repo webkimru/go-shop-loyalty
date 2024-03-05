@@ -55,6 +55,13 @@ func (m *Repository) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// пишем в канал
+	accrualRequest := models.AccrualRequest{
+		Number: orderNumberDB,
+		UserID: userDB,
+	}
+	m.Jobs <- accrualRequest
+
 	// `202` — новый номер заказа принят в обработку;
 	w.WriteHeader(http.StatusAccepted)
 	_, err = w.Write([]byte(orderNumberDB))
@@ -88,4 +95,9 @@ func (m *Repository) GetOrders(w http.ResponseWriter, r *http.Request) {
 		logger.Log.Errorln("failed WriteResponseJSON()=", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
+}
+
+func (m *Repository) Close() error {
+	close(m.Jobs)
+	return nil
 }

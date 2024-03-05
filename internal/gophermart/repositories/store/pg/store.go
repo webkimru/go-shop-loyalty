@@ -127,9 +127,10 @@ func (s *Store) GetOrders(ctx context.Context, userID int64) ([]models.Order, er
 		if err != nil {
 			return nil, err
 		}
+		money := models.Money(accrual.Int64)
 		orders = append(orders, models.Order{
 			Number:    number,
-			Accrual:   float32(accrual.Int64) / 100,
+			Accrual:   models.Money(money.Get()),
 			Status:    models.OrderState(status),
 			CreatedAt: createdAt,
 		})
@@ -153,12 +154,13 @@ func (s *Store) GetBalance(ctx context.Context, userID int64) (*models.Balance, 
 	}
 	defer stmt.Close()
 
-	var userDB, current, withdrawn int64
+	var userDB int64
+	var current, withdrawn models.Money
 	err = stmt.QueryRowContext(ctx, userID).Scan(&userDB, &current, &withdrawn)
 	balance := models.Balance{
 		UserID:    userDB,
-		Current:   float32(current) / 100,
-		Withdrawn: float32(current) / 100,
+		Current:   models.Money(current.Get()),
+		Withdrawn: models.Money(withdrawn.Get()),
 	}
 	switch {
 	case err == sql.ErrNoRows:
@@ -168,4 +170,30 @@ func (s *Store) GetBalance(ctx context.Context, userID int64) (*models.Balance, 
 	default:
 		return &balance, nil
 	}
+}
+
+func (s *Store) SetBalance(ctx context.Context, balance models.Balance, userID int64) error {
+	row := s.Conn.QueryRowContext(ctx, `
+		INSERT INTO gophermart.balance (user_id, current, withdrawn) VALUES($1, $2, $3)
+			ON CONFLICT (user_id) DO
+				UPDATE SET current = gophermart.balance.current + $2
+	`, userID, balance.Current, balance.Withdrawn)
+
+	if err := row.Err(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Store) UpdateOrder(ctx context.Context, order models.Order) error {
+	row := s.Conn.QueryRowContext(ctx, `
+		UPDATE gophermart.orders SET accrual = $1, status = $2
+			WHERE number = $3
+	`, order.Accrual, order.Status, order.Number)
+
+	if err := row.Err(); err != nil {
+		return err
+	}
+	return nil
 }

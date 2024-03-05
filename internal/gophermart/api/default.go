@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/webkimru/go-shop-loyalty/internal/gophermart/config"
+	"github.com/webkimru/go-shop-loyalty/internal/gophermart/models"
 	"github.com/webkimru/go-shop-loyalty/internal/gophermart/repositories/store"
 	"net/http"
 )
@@ -19,12 +20,14 @@ const bearerSchema = "Bearer "
 // Repository описываем структуру репозитория для хендлеров
 type Repository struct {
 	Store store.Repositories
+	Jobs  chan models.AccrualRequest
 }
 
 // NewRepo создаем новый репозиторий
 func NewRepo(repository store.Repositories) *Repository {
 	return &Repository{
 		Store: repository,
+		Jobs:  make(chan models.AccrualRequest, 1000),
 	}
 }
 

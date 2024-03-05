@@ -22,6 +22,9 @@ func Setup(ctx context.Context) (*string, error) {
 	databaseURI := flag.String("d", "", "database uri")
 	secretKey := flag.String("k", "", "secret key")
 	tokenExp := flag.Int("t", 2, "token exp (hour)")
+	accrualSystemAddress := flag.String("r", "localhost:8181", "accrual system address")
+	accrualPollInterval := flag.Int("i", 1, "accrual poll interval (sec)")
+
 	flag.Parse()
 
 	// envs:
@@ -44,6 +47,16 @@ func Setup(ctx context.Context) (*string, error) {
 		}
 		tokenExp = &te
 	}
+	if envAccrualSystemAddress := os.Getenv("ACCRUAL_SYSTEM_ADDRESS"); envAccrualSystemAddress != "" {
+		accrualSystemAddress = &envAccrualSystemAddress
+	}
+	if envAccrualPollInterval := os.Getenv("ACCRUAL_POLL_INTERVAL"); envAccrualPollInterval != "" {
+		pi, err := strconv.Atoi(envAccrualPollInterval)
+		if err != nil {
+			log.Fatal(err)
+		}
+		accrualPollInterval = &pi
+	}
 
 	// init logger:
 	if err := logger.Initialize("info"); err != nil {
@@ -52,11 +65,13 @@ func Setup(ctx context.Context) (*string, error) {
 
 	// config:
 	a := config.AppConfig{
-		ServerAddress:    *serverAddress,
-		StoreDriver:      *storeDriver,
-		StoreDatabaseURI: *databaseURI,
-		SecretKey:        *secretKey,
-		TokenExp:         *tokenExp,
+		ServerAddress:        *serverAddress,
+		StoreDriver:          *storeDriver,
+		StoreDatabaseURI:     *databaseURI,
+		SecretKey:            *secretKey,
+		TokenExp:             *tokenExp,
+		AccrualSystemAddress: *accrualSystemAddress,
+		AccrualPollInterval:  *accrualPollInterval,
 	}
 	app = a
 
@@ -66,6 +81,10 @@ func Setup(ctx context.Context) (*string, error) {
 		"RUN_ADDRESS", app.ServerAddress,
 		"STORE_DRIVER", app.StoreDriver,
 		"DATABASE_URI", app.StoreDatabaseURI,
+		"SECRET_KEY", app.SecretKey,
+		"TOKEN_EXP", app.TokenExp,
+		"ACCRUAL_SYSTEM_ADDRESS", app.AccrualSystemAddress,
+		"ACCRUAL_POLL_INTERVAL", app.AccrualPollInterval,
 	)
 
 	// init store:

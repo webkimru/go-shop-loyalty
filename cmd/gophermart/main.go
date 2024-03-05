@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"github.com/webkimru/go-shop-loyalty/internal/gophermart"
+	"github.com/webkimru/go-shop-loyalty/internal/gophermart/api"
 	"github.com/webkimru/go-shop-loyalty/internal/gophermart/logger"
 	"log"
 	"net/http"
@@ -37,7 +38,11 @@ func main() {
 		}
 	}()
 
-	// Gracefully shutdown by signal
+	// check accrual
+	wg.Add(1)
+	go gophermart.CheckAccrual(ctx, &wg)
+
+	// gracefully shutdown by signal
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -45,7 +50,10 @@ func main() {
 		cancel()
 		// shutdown server
 		if err := srv.Shutdown(ctx); err != nil {
-			logger.Log.Fatalf("Server shutdown failed: %v\n", err)
+			logger.Log.Fatalf("Server shutdown failed: %v", err)
+		}
+		if err := api.Repo.Close(); err != nil {
+			logger.Log.Fatalf("Channel Jobs shutdown failed: %v", err)
 		}
 	}()
 
