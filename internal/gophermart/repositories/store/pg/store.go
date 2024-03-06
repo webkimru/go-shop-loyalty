@@ -210,11 +210,17 @@ func (s *Store) UpdateBalanceAndOrder(ctx context.Context, order models.Order) e
 			ON CONFLICT (user_id) DO
 				UPDATE SET current = gophermart.balance.current + $2
 	`, order.UserID, order.Accrual, 0)
+	if err != nil {
+		return err
+	}
 
 	_, err = tx.ExecContext(ctx, `
 		UPDATE gophermart.orders SET accrual = $1, status = $2
 			WHERE number = $3
 	`, order.Accrual, order.Status, order.Number)
+	if err != nil {
+		return err
+	}
 
 	return tx.Commit()
 }
