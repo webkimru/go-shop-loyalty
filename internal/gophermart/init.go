@@ -3,6 +3,7 @@ package gophermart
 import (
 	"context"
 	"flag"
+	"fmt"
 	"github.com/webkimru/go-shop-loyalty/internal/gophermart/api"
 	"github.com/webkimru/go-shop-loyalty/internal/gophermart/config"
 	"github.com/webkimru/go-shop-loyalty/internal/gophermart/logger"
@@ -11,6 +12,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 )
 
 var app config.AppConfig
@@ -70,7 +72,7 @@ func Setup(ctx context.Context) (*string, error) {
 		StoreDatabaseURI:     *databaseURI,
 		SecretKey:            *secretKey,
 		TokenExp:             *tokenExp,
-		AccrualSystemAddress: *accrualSystemAddress,
+		AccrualSystemAddress: URL(*accrualSystemAddress),
 		AccrualPollInterval:  *accrualPollInterval,
 	}
 	app = a
@@ -104,4 +106,12 @@ func Setup(ctx context.Context) (*string, error) {
 	api.NewHandlers(repo, &app)
 
 	return serverAddress, nil
+}
+
+func URL(rawUrl string) string {
+	if !strings.HasPrefix(rawUrl, "http") {
+		return fmt.Sprintf("http://%s", rawUrl)
+	}
+
+	return rawUrl
 }
