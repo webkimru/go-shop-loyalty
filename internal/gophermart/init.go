@@ -108,10 +108,10 @@ func Setup(ctx context.Context) (*string, error) {
 	return serverAddress, nil
 }
 
-func URL(rawUrl string) string {
-	if !strings.HasPrefix(rawUrl, "http") {
-		return fmt.Sprintf("http://%s", rawUrl)
+func URL(rawURL string) string {
+	if !strings.HasPrefix(rawURL, "http") {
+		return fmt.Sprintf("http://%s", rawURL)
 	}
 
-	return rawUrl
+	return rawURL
 }
