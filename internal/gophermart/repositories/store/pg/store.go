@@ -195,5 +195,87 @@ func (s *Store) UpdateOrder(ctx context.Context, order models.Order) error {
 	if err := row.Err(); err != nil {
 		return err
 	}
+
 	return nil
+}
+
+func (s *Store) SetWithdrawal(ctx context.Context, withdrawal models.Withdrawal) error {
+	tx, err := s.Conn.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback()
+
+	row, err := tx.ExecContext(ctx, `
+		WITH cte AS (
+			SELECT user_id FROM gophermart.balance
+				WHERE current - $1 >= 0
+		)
+		UPDATE gophermart.balance
+			SET current = current - $1, withdrawn = withdrawn + $1
+				FROM cte
+					WHERE balance.user_id = cte.user_id AND balance.user_id = $2
+						RETURNING current
+	`, withdrawal.Sum, withdrawal.UserID)
+	if err != nil {
+		return err
+	}
+	affected, err := row.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return api.ErrNotEnoughMoney
+	}
+
+	_, err = tx.ExecContext(ctx, `
+		INSERT INTO gophermart.withdrawals ("order", user_id, sum) VALUES($1, $2, $3)
+			ON CONFLICT ("order") DO NOTHING
+	`, withdrawal.Order, withdrawal.UserID, withdrawal.Sum)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func (s *Store) GetWithdrawals(ctx context.Context, userID int64) ([]models.Withdrawal, error) {
+	stmt, err := s.Conn.PrepareContext(ctx, `
+		SELECT order, sum, status, created_at
+			FROM gophermart.withdrawals
+				WHERE user_id = $1
+				ORDER BY created_at DESC
+	`)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := stmt.QueryContext(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var withdrawals []models.Withdrawal
+	for rows.Next() {
+		var order, createdAt string
+		var sum models.Money
+		err = rows.Scan(&order, &sum, &createdAt)
+		if err != nil {
+			return nil, err
+		}
+		withdrawals = append(withdrawals, models.Withdrawal{
+			Order:     order,
+			Sum:       models.Money(sum.Get()),
+			CreatedAt: createdAt,
+		})
+	}
+
+	// необходимо проверить ошибки уровня курсора
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return withdrawals, nil
 }

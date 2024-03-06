@@ -22,11 +22,3 @@ func (m *Repository) GetBalance(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
-
-func (m *Repository) PayWithdraw(w http.ResponseWriter, r *http.Request) {
-
-}
-
-func (m *Repository) GetWithdraw(w http.ResponseWriter, r *http.Request) {
-
-}

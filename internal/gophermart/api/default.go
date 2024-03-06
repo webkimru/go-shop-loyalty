@@ -14,6 +14,7 @@ var Repo *Repository
 var app *config.AppConfig
 
 var ErrDuplicate = errors.New("duplicate key value")
+var ErrNotEnoughMoney = errors.New("not enough money")
 
 const bearerSchema = "Bearer "
 

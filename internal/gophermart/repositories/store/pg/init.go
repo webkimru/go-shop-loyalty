@@ -56,6 +56,16 @@ func Bootstrap(ctx context.Context, conn *sql.DB) error {
 		)
 	`)
 	tx.ExecContext(ctx, `CREATE UNIQUE INDEX IF NOT EXISTS balance_idx ON balance (user_id)`)
+	// withdrawals:
+	tx.ExecContext(ctx, `
+		CREATE TABLE IF NOT EXISTS withdrawals (
+			"order" VARCHAR(50) NOT NULL,
+		    user_id BIGINT NOT NULL,
+			"sum" BIGINT NOT NULL,
+			created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+		)
+	`)
+	tx.ExecContext(ctx, `CREATE UNIQUE INDEX IF NOT EXISTS withdrawal_idx ON withdrawals ("order")`)
 
 	// триггер для поля updated_at
 	tx.ExecContext(ctx, `

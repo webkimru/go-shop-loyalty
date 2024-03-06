@@ -80,3 +80,10 @@ type AccrualResponse struct {
 	Status  AccrualState `json:"status"`
 	Accrual Money        `json:"accrual"`
 }
+
+type Withdrawal struct {
+	Order     string `json:"order"`
+	UserID    int64  `json:"-"`
+	Sum       Money  `json:"sum"`
+	CreatedAt string `json:"processed_at"`
+}
