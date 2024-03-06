@@ -242,7 +242,7 @@ func (s *Store) SetWithdrawal(ctx context.Context, withdrawal models.Withdrawal)
 
 func (s *Store) GetWithdrawals(ctx context.Context, userID int64) ([]models.Withdrawal, error) {
 	stmt, err := s.Conn.PrepareContext(ctx, `
-		SELECT order, sum, status, created_at
+		SELECT "order", sum, created_at
 			FROM gophermart.withdrawals
 				WHERE user_id = $1
 				ORDER BY created_at DESC
