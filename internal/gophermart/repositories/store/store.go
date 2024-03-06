@@ -18,6 +18,8 @@ type Repositories interface {
 	GetBalance(ctx context.Context, userID int64) (*models.Balance, error)
 	SetBalance(ctx context.Context, balance models.Balance, userID int64) error
 
+	UpdateBalanceAndOrder(ctx context.Context, order models.Order) error
+
 	GetWithdrawals(ctx context.Context, userID int64) ([]models.Withdrawal, error)
 	SetWithdrawal(ctx context.Context, withdrawal models.Withdrawal) error
 }

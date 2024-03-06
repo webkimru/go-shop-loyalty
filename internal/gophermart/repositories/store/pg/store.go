@@ -199,6 +199,26 @@ func (s *Store) UpdateOrder(ctx context.Context, order models.Order) error {
 	return nil
 }
 
+func (s *Store) UpdateBalanceAndOrder(ctx context.Context, order models.Order) error {
+	tx, err := s.Conn.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.ExecContext(ctx, `
+		INSERT INTO gophermart.balance (user_id, current, withdrawn) VALUES($1, $2, $3)
+			ON CONFLICT (user_id) DO
+				UPDATE SET current = gophermart.balance.current + $2
+	`, order.UserID, order.Accrual, 0)
+
+	_, err = tx.ExecContext(ctx, `
+		UPDATE gophermart.orders SET accrual = $1, status = $2
+			WHERE number = $3
+	`, order.Accrual, order.Status, order.Number)
+
+	return tx.Commit()
+}
+
 func (s *Store) SetWithdrawal(ctx context.Context, withdrawal models.Withdrawal) error {
 	tx, err := s.Conn.BeginTx(ctx, nil)
 	if err != nil {

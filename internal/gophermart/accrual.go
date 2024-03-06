@@ -44,23 +44,15 @@ func CheckAccrual(ctx context.Context, wg *sync.WaitGroup) {
 			"accrual.Accrual", accrualResult.Accrual,
 		)
 
-		// update balance
-		balance := models.Balance{}
-		balance.Current = models.Money(accrualResult.Accrual.Set())
-		err = api.Repo.Store.SetBalance(ctx, balance, job.UserID)
-		if err != nil {
-			logger.Log.Errorln("failed SetBalance()=", err)
-		}
-
-		// update order status
+		// update balance and order
 		order := models.Order{}
 		order.UserID = job.UserID
 		order.Number = accrualResult.Number
 		order.Accrual = models.Money(accrualResult.Accrual.Set())
 		order.Status = ConvertStatus(string(accrualResult.Status))
-		err = api.Repo.Store.UpdateOrder(ctx, order)
+		err = api.Repo.Store.UpdateBalanceAndOrder(ctx, order)
 		if err != nil {
-			logger.Log.Errorln("failed UpdateOrder()=", err)
+			logger.Log.Errorln("failed UpdateBalanceAndOrder()=", err)
 		}
 
 		// если статусы нефинальные, то возвращаем в канал
